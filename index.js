@@ -1,93 +1,86 @@
-const apiUrl= "https://jsonplaceholder.typicode.com/todos";
+// Fake API: Simulate the database
+let fakeDatabase = [];
 
-
-
-
-const getTodos=()=>{
-    fetch(apiUrl+'?_limit=5')
-    .then(res=>res.json())
-    .then(data=>data.forEach(
-        todo=>{addToDoToDOM(todo)
-            // console.log(todo)
-
-        }))
-        
-       
+// Fake Fetch Functions
+function getTodos() {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(fakeDatabase);
+        }, 500); // Simulates a delay
+    });
 }
 
-const createTodo=(e)=>{
-    e.preventDefault();
-    
-    const newTodo={
-        // userId:1,
-        title:e.target.firstElementChild.value,
-        // id:6,
-        completed:false
-    }
-    
-    fetch(apiUrl,{
-        method:'POST',
-        body:JSON.stringify(newTodo),
-        headers:{
-            'Content-Type':'application/json'
-        }
-    }).then(res=>res.json())
-    .then(data=>addToDoToDOM(data))
-    
-};
-
-
-const addToDoToDOM =(todo)=>{
-    const div=document.createElement('div');
-    div.classList.add('todo');
-    const text= document.createTextNode(todo.title)
-    div.setAttribute('data-id',todo.id)
-
-    if(todo.completed){
-        div.classList.add('done')
-    }
-    div.appendChild(text)
-    document.getElementById('todo-list').append(div)
-}
-const toggleCompleted=(e)=>{
-    if(e.target.classList.contains('todo')){
-        e.target.classList.toggle('done');
-
-        updateTodo(e.target.dataset.id, e.target.classList.contains('done'));
-    }
-   
-    
+function addTodo(task) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const newTask = { id: Date.now(), text: task, completed: false };
+            fakeDatabase.push(newTask);
+            resolve(newTask);
+        }, 500);
+    });
 }
 
-const updateTodo=(id, completed)=>{
-    // console.log(id,completed);
-    fetch(`${apiUrl}/${id}`,{
-        method:'PUT',
-        body:JSON.stringify({completed}),
-        headers:{
-            'Content-Type':'application/json'
-        }
-    }).then(res=>res.json())
-    .then(data=>console.log(data));
-};
+function deleteTodo(id) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            fakeDatabase = fakeDatabase.filter(todo => todo.id !== id);
+            resolve(id);
+        }, 500);
+    });
+}
 
-const deleteTodo=(e)=>{
-    if(e.target.classList.contains('todo')){
-      const id = e.target.dataset.id;
-      fetch(`${apiUrl}/${id}`,{
-        method:'DELETE',        
-      }).then(res=>res.json())
-      .then(()=>e.target.remove())
-      
-    }
+function toggleTodo(id) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const task = fakeDatabase.find(todo => todo.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                resolve(task);
+            }
+        }, 500);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const todos = await getTodos();
+    displayTodos(todos);
+});
+
+function displayTodos(todos) {
+    const taskList = document.getElementById('taskList');
+    taskList.innerHTML = ''; // Clear old tasks
+    todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span style="text-decoration: ${todo.completed ? 'line-through' : 'none'}">
+                ${todo.text}
+            </span>
+            <button onclick="toggleTask(${todo.id})">Toggle</button>
+            <button onclick="removeTask(${todo.id})">Delete</button>
+        `;
+        taskList.appendChild(li);
+    });
 }
 
 
+document.getElementById('addTaskBtn').addEventListener('click', async () => {
+    const taskInput = document.getElementById('taskInput');
+    const task = taskInput.value.trim();
+    if (!task) return;
+    const newTask = await addTodo(task);
+    const todos = await getTodos();
+    displayTodos(todos);
+    taskInput.value = '';
+});
 
-const init=()=>{
-    document.addEventListener('DOMContentLoaded',getTodos())
-    document.querySelector('#todo-form').addEventListener('submit',createTodo);
-    document.querySelector('#todo-list').addEventListener('click',toggleCompleted)
-    document.querySelector('#todo-list').addEventListener('dblclick',deleteTodo);
+async function removeTask(id) {
+    await deleteTodo(id);
+    const todos = await getTodos();
+    displayTodos(todos);
 }
-init()
+
+async function toggleTask(id) {
+    await toggleTodo(id);
+    const todos = await getTodos();
+    displayTodos(todos);
+}
